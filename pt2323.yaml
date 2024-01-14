@@ -1,4 +1,3 @@
-# example configuration:
 esphome:
   name: pt2323-source-selector
   friendly_name: Audio Source Selector 
@@ -29,17 +28,50 @@ wifi:
     ssid: "Audio-Source-Selector"
     password: "rDfohPQKUgtF"
 
-#captive_portal:
 
-# shorthand
 external_components:
   - source: my_components
 
-# Add your component here
-pt2323:
 
+# PT2323 Component
 i2c:
-  sda: 21
-  scl: 22
+  sda: 21             # GPIO pin used for I2C SDA
+  scl: 22             # GPIO pin used for I2C SCL
+  scan: True          # Enables I2C device scanning on startup
+  id: pt2323_bus      # Unique identifier for the I2C bus
 
 
+pt2323:
+  id: pt2323_audio  # Unique identifier for the PT2323 component
+
+
+# Binary sensor for a physical button
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 15                # GPIO pin connected to the button
+      mode: INPUT_PULLUP        # Configure the pin mode
+    name: "Button"              # Name of the binary sensor
+    on_press:                   # Actions to perform when the button is pressed
+      then:
+        - switch.toggle: output_1_switch
+
+
+# Template switch to control PT2323 output
+switch:
+  - platform: template
+    name: "Activate Output 1"
+    id: output_1_switch  # Unique identifier for the switch
+
+     # Actions to perform when switched on
+    turn_on_action:
+      - lambda: |-
+          id(pt2323_audio).setInput(0);  //Turn on channel 1
+          id(pt2323_audio).setMute(0,0,0,0,0,0,0); //Unmute all channels
+
+    # Actions to perform when switched on
+    turn_off_action:
+      - lambda: |-
+          id(pt2323_audio).setMute(0,0,0,0,0,0,1); //mute all channels
+
+    optimistic: true # Assume state changes are successful without confirmation
